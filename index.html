@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Maqshof Al Faruq Majenang - Koperasi Digital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .nav-active { background-color: #1e293b; border-left: 4px solid #f97316; color: #fb923c !important; }
+        .loading-screen { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; }
+        
+        /* Custom thin scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        @media (max-width: 768px) {
+            .mobile-hide { display: none; }
+            .sidebar-open { transform: translateX(0) !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading-screen">
+        <div class="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+        <p class="mt-4 font-bold text-slate-600" id="loading-text">Memproses...</p>
+    </div>
+
+    <!-- Screen: Auth -->
+    <div id="screen-auth" class="min-h-screen flex items-center justify-center p-4 bg-slate-900">
+        <div class="bg-white p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="bg-orange-100 w-16 h-16 md:w-20 md:h-20 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="store" class="text-orange-600 w-8 h-8 md:w-10 md:h-10"></i>
+                </div>
+                <h1 class="text-xl md:text-2xl font-black tracking-tight text-slate-800 uppercase">Maqshof Al Faruq Majenang</h1>
+                <p class="text-slate-500 text-sm">Silakan login/daftar untuk memulai</p>
+            </div>
+
+            <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+                <div class="relative">
+                    <i data-lucide="user" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                    <input type="text" id="login-u" placeholder="Username" required class="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-orange-500 transition-all text-sm">
+                </div>
+                <div class="relative">
+                    <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                    <input type="password" id="login-p" placeholder="Password" required class="w-full p-4 pl-12 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-orange-500 transition-all text-sm">
+                </div>
+                <button type="submit" class="w-full bg-orange-600 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-orange-700 transition transform active:scale-95">Masuk Sekarang</button>
+                <p class="text-center text-sm text-slate-500">Belum punya akun? <button type="button" onclick="toggleAuth(true)" class="text-orange-600 font-bold">Daftar</button></p>
+            </form>
+
+            <form id="form-reg" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                <input type="text" id="reg-nama" placeholder="Nama Lengkap" required class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-orange-500 text-sm">
+                <input type="text" id="reg-u" placeholder="Username" required class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-orange-500 text-sm">
+                <input type="password" id="reg-p" placeholder="Password" required class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-orange-500 text-sm">
+                <button type="submit" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-slate-700 transition">Daftar Anggota</button>
+                <p class="text-center text-sm text-slate-500">Sudah punya akun? <button type="button" onclick="toggleAuth(false)" class="text-orange-600 font-bold">Login</button></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Screen: Main -->
+    <div id="screen-main" class="hidden flex h-screen overflow-hidden relative">
+        <div id="sidebar-overlay" onclick="toggleSidebar(false)" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
+
+        <aside id="sidebar" class="fixed md:relative w-64 h-full bg-slate-900 text-white z-50 transition-transform -translate-x-full md:translate-x-0 flex flex-col">
+            <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="bg-orange-500 p-2 rounded-lg"><i data-lucide="shopping-bag" class="text-white w-5 h-5"></i></div>
+                    <span class="font-bold tracking-tight uppercase text-xs">Maqshof Al Faruq Majenang</span>
+                </div>
+                <button onclick="toggleSidebar(false)" class="md:hidden text-slate-400"><i data-lucide="x"></i></button>
+            </div>
+            <nav class="flex-1 p-4 space-y-2">
+                <button onclick="showPage('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 transition text-sm">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+                </button>
+                <button onclick="showPage('lihat-stok')" id="nav-lihat-stok" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 transition text-sm">
+                    <i data-lucide="list-checks" class="w-5 h-5"></i> Lihat Stok
+                </button>
+                <button onclick="showPage('pesan')" id="nav-pesan" class="nav-btn user-only w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 transition text-sm">
+                    <i data-lucide="shopping-cart" class="w-5 h-5"></i> Pesan Barang
+                </button>
+                <button onclick="showPage('barang')" id="nav-barang" class="nav-btn admin-only hidden w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 transition text-sm">
+                    <i data-lucide="package" class="w-5 h-5"></i> Kelola Stok
+                </button>
+            </nav>
+            <div class="p-6 border-t border-slate-800">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center font-bold text-white shadow-lg" id="user-initial">?</div>
+                    <div class="overflow-hidden">
+                        <p class="text-sm font-bold truncate text-white" id="user-name">User</p>
+                        <p class="text-[10px] uppercase text-slate-500 font-black tracking-widest" id="user-role">Role</p>
+                    </div>
+                </div>
+                <button onclick="location.reload()" class="w-full flex items-center gap-2 text-red-400 text-xs hover:bg-red-500/10 p-2 rounded-lg transition">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> Keluar Aplikasi
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col overflow-hidden w-full">
+            <header class="bg-white border-b p-4 flex justify-between items-center shadow-sm sticky top-0 z-30">
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleSidebar(true)" class="md:hidden p-2 text-slate-600 bg-slate-50 rounded-lg">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <h2 id="page-title" class="text-lg md:text-xl font-bold text-slate-700 capitalize">Dashboard</h2>
+                </div>
+                <button onclick="fetchData()" class="p-2 bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                </button>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50 pb-24">
+                
+                <!-- Dashboard -->
+                <div id="page-dashboard" class="page-content space-y-6">
+                    <div class="bg-slate-900 text-white p-6 md:p-10 rounded-3xl md:rounded-[40px] relative overflow-hidden shadow-xl">
+                        <div class="relative z-10">
+                            <h3 class="text-xl md:text-3xl font-bold">Ahlan wa Sahlan!</h3>
+                            <p class="text-slate-400 mt-2 text-sm max-w-sm">Informasi ketersediaan barang dan pemesanan Maqshof Al Faruq Majenang</p>
+                        </div>
+                        <i data-lucide="store" class="absolute right-[-20px] bottom-[-20px] w-40 h-40 md:w-64 md:h-64 text-white/5 rotate-12"></i>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4 cursor-pointer" onclick="showPage('lihat-stok')">
+                            <div class="p-3 bg-blue-50 text-blue-600 rounded-2xl"><i data-lucide="box" class="w-5 h-5"></i></div>
+                            <div>
+                                <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest">Total Barang</p>
+                                <h4 id="stat-barang" class="text-xl font-black text-slate-800">0</h4>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
+                            <div class="p-3 bg-orange-50 text-orange-600 rounded-2xl"><i data-lucide="check-circle-2" class="w-5 h-5"></i></div>
+                            <div>
+                                <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest">Total Stok</p>
+                                <h4 id="stat-stok" class="text-xl font-black text-orange-600">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Page: Lihat Stok (Simple List) -->
+                <div id="page-lihat-stok" class="page-content hidden space-y-2">
+                    <div class="relative mb-6">
+                        <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                        <input type="text" onkeyup="filterStok(this.value)" placeholder="Ketik nama barang..." class="w-full p-4 pl-12 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-orange-500 shadow-sm text-sm">
+                    </div>
+                    
+                    <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div id="list-stok-simple" class="divide-y divide-slate-50">
+                            <!-- List items will be injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin: Kelola Stok -->
+                <div id="page-barang" class="page-content hidden admin-only">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <h3 class="font-bold text-lg">Kelola Inventori</h3>
+                        <button onclick="openModal()" class="w-full sm:w-auto bg-orange-600 text-white px-5 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg">
+                            <i data-lucide="plus" class="w-5 h-5"></i> Tambah Baru
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div id="table-barang" class="divide-y divide-slate-50"></div>
+                    </div>
+                </div>
+
+                <!-- User: Pesan Barang -->
+                <div id="page-pesan" class="page-content hidden user-only">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 space-y-4">
+                            <div class="relative">
+                                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                                <input type="text" onkeyup="filterItems(this.value)" placeholder="Cari jajanan..." class="w-full p-4 pl-12 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-orange-500 shadow-sm text-sm">
+                            </div>
+                            <div id="katalog-items" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+                        </div>
+                        
+                        <div class="lg:col-span-1">
+                            <button onclick="toggleCartMobile(true)" class="md:hidden fixed bottom-6 right-6 bg-orange-600 text-white p-4 rounded-full shadow-2xl z-40 flex items-center gap-3">
+                                <i data-lucide="shopping-basket"></i>
+                                <span id="cart-count-mobile" class="bg-white text-orange-600 w-6 h-6 rounded-full text-xs font-black flex items-center justify-center">0</span>
+                            </button>
+
+                            <div id="cart-panel" class="fixed inset-0 bg-white z-[60] md:relative md:inset-auto md:z-0 hidden md:block flex flex-col p-6 md:p-6 md:rounded-3xl md:border md:border-slate-100 md:shadow-xl">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h4 class="font-bold text-lg flex items-center gap-2"><i data-lucide="shopping-basket" class="text-orange-500"></i> Pesanan Anda</h4>
+                                    <button onclick="toggleCartMobile(false)" class="md:hidden p-2 bg-slate-100 rounded-full"><i data-lucide="x"></i></button>
+                                </div>
+                                <div id="cart-items" class="flex-1 space-y-3 mb-6 overflow-y-auto max-h-[60vh] md:max-h-80 pr-1 text-sm"></div>
+                                <div class="border-t pt-6">
+                                    <div class="flex justify-between items-end mb-6">
+                                        <span class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Total</span>
+                                        <span id="cart-total" class="text-2xl font-black text-slate-800">Rp 0</span>
+                                    </div>
+                                    <button onclick="checkout()" class="w-full bg-green-600 text-white py-5 rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-green-700 transition active:scale-95">
+                                        <i data-lucide="send" class="w-6 h-6"></i> KIRIM KE WA
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Form (Admin) -->
+    <div id="modal-form" class="fixed inset-0 bg-slate-900/80 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-[32px] w-full max-w-md shadow-2xl">
+            <h3 id="modal-title" class="text-xl font-bold mb-6 text-center">Detail Barang</h3>
+            <form onsubmit="saveBarang(event)" class="space-y-4">
+                <input type="hidden" id="f-id">
+                <input type="text" id="f-nama" placeholder="Nama Produk" required class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:border-orange-500">
+                <input type="text" id="f-kat" placeholder="Kategori" required class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:border-orange-500">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" id="f-harga" placeholder="Harga" required class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:border-orange-500">
+                    <input type="number" id="f-stok" placeholder="Stok" required class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:border-orange-500">
+                </div>
+                <div class="flex gap-3 pt-6">
+                    <button type="button" onclick="closeModal()" class="flex-1 font-bold text-slate-400 py-4">Batal</button>
+                    <button type="submit" class="flex-[2] bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-lg">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const WA_ADMIN = "6289525774177";
+        const API_URL = "https://script.google.com/macros/s/AKfycbwrLBxuyWeQ1OcebLeHzHKYlAaZYy3jaGOOxB1A_BxVnMVQzGhrSBTFTkJo-iFn0oXA/exec"; 
+
+        let user = null;
+        let db = [];
+        let cart = [];
+
+        function refreshIcons() {
+            setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 50);
+        }
+
+        function setLoader(s, t = "Memproses...") {
+            document.getElementById('loading').style.display = s ? 'flex' : 'none';
+            document.getElementById('loading-text').innerText = t;
+        }
+
+        function toggleSidebar(open) {
+            const sb = document.getElementById('sidebar');
+            const ov = document.getElementById('sidebar-overlay');
+            if(open) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); }
+            else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); }
+        }
+
+        function toggleCartMobile(open) {
+            document.getElementById('cart-panel').classList.toggle('hidden', !open);
+        }
+
+        function toggleAuth(reg) {
+            document.getElementById('form-login').classList.toggle('hidden', reg);
+            document.getElementById('form-reg').classList.toggle('hidden', !reg);
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('login-u').value;
+            const p = document.getElementById('login-p').value;
+            setLoader(true, "Mengecek akun...");
+            try {
+                const res = await fetch(`${API_URL}?action=login&u=${u}&p=${p}`);
+                const data = await res.json();
+                if(data.status === "success") {
+                    user = data.user;
+                    startApp();
+                } else {
+                    alert("Username atau Password salah.");
+                }
+            } catch(e) { alert("Masalah koneksi."); }
+            setLoader(false);
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const body = {
+                action: 'register',
+                nama: document.getElementById('reg-nama').value,
+                username: document.getElementById('reg-u').value,
+                password: document.getElementById('reg-p').value
+            };
+            setLoader(true, "Mendaftarkan...");
+            try {
+                await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(body) });
+                alert("Berhasil terdaftar. Silakan masuk.");
+                toggleAuth(false);
+            } catch(e) { alert("Gagal mendaftar."); }
+            setLoader(false);
+        }
+
+        function startApp() {
+            document.getElementById('screen-auth').classList.add('hidden');
+            document.getElementById('screen-main').classList.remove('hidden');
+            document.getElementById('user-name').innerText = user.nama;
+            document.getElementById('user-role').innerText = user.role;
+            document.getElementById('user-initial').innerText = user.nama[0].toUpperCase();
+
+            const isAdmin = user.role === 'admin';
+            document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
+            document.querySelectorAll('.user-only').forEach(el => el.classList.toggle('hidden', isAdmin));
+
+            fetchData();
+            showPage('dashboard');
+        }
+
+        async function fetchData() {
+            setLoader(true, "Sinkronisasi data...");
+            try {
+                const res = await fetch(API_URL);
+                db = await res.json();
+                renderUI();
+            } catch(e) { console.error(e); }
+            setLoader(false);
+        }
+
+        function renderUI() {
+            document.getElementById('stat-barang').innerText = db.length;
+            document.getElementById('stat-stok').innerText = db.reduce((a, b) => a + Number(b.stok), 0);
+
+            // Admin List View
+            const adminTable = document.getElementById('table-barang');
+            adminTable.innerHTML = db.map(i => `
+                <div class="flex justify-between items-center p-4 hover:bg-slate-50 transition">
+                    <div class="flex-1 min-w-0">
+                        <p class="font-bold text-slate-800 truncate">${i.nama}</p>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase">${i.kategori} • Rp ${Number(i.harga).toLocaleString()}</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                             <p class="text-xs font-black ${i.stok > 0 ? 'text-blue-600' : 'text-red-500'}">${i.stok} pcs</p>
+                        </div>
+                        <button onclick='editItem(${JSON.stringify(i)})' class="p-2 text-slate-300 hover:text-orange-500 transition">
+                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            renderStokSimple(db);
+            renderKatalog(db);
+            refreshIcons();
+        }
+
+        // Lihat Stok: Simple List View (User & Admin)
+        function renderStokSimple(items) {
+            const container = document.getElementById('list-stok-simple');
+            container.innerHTML = items.length ? items.map(i => `
+                <div class="flex justify-between items-center p-4 hover:bg-slate-50 transition">
+                    <div class="flex-1 min-w-0 pr-4">
+                        <h4 class="font-bold text-slate-700 text-sm truncate">${i.nama}</h4>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">${i.kategori} • Rp ${Number(i.harga).toLocaleString()}</p>
+                    </div>
+                    <div class="shrink-0 text-right">
+                        <span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${i.stok > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}">
+                            ${i.stok > 0 ? i.stok + ' Tersedia' : 'Habis'}
+                        </span>
+                    </div>
+                </div>
+            `).join('') : '<div class="p-10 text-center text-slate-300 text-xs font-bold italic uppercase">Barang tidak ditemukan</div>';
+        }
+
+        function renderKatalog(items) {
+            const container = document.getElementById('katalog-items');
+            container.innerHTML = items.map(i => `
+                <div onclick="addToCart('${i.id}', '${i.nama.replace(/'/g,"")}', ${i.harga}, ${i.stok})" class="bg-white p-4 rounded-3xl border hover:border-orange-500 cursor-pointer shadow-sm active:scale-95 duration-200">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1 overflow-hidden">
+                            <span class="text-[9px] text-slate-400 font-bold uppercase">${i.kategori}</span>
+                            <h4 class="font-bold text-slate-800 text-sm truncate">${i.nama}</h4>
+                        </div>
+                        <div class="bg-orange-50 text-orange-600 p-2 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <p class="text-orange-600 font-black">Rp ${Number(i.harga).toLocaleString()}</p>
+                        <span class="text-[9px] font-black uppercase ${i.stok > 0 ? 'text-slate-400' : 'text-red-500'}">Stok: ${i.stok}</span>
+                    </div>
+                </div>
+            `).join('');
+            refreshIcons();
+        }
+
+        function filterStok(v) {
+            renderStokSimple(db.filter(i => i.nama.toLowerCase().includes(v.toLowerCase())));
+        }
+
+        function filterItems(v) {
+            renderKatalog(db.filter(i => i.nama.toLowerCase().includes(v.toLowerCase())));
+        }
+
+        function openModal() {
+            ['f-id','f-nama','f-kat','f-harga','f-stok'].forEach(id => document.getElementById(id).value = "");
+            document.getElementById('modal-title').innerText = "Tambah Barang";
+            document.getElementById('modal-form').classList.remove('hidden');
+        }
+
+        function editItem(i) {
+            document.getElementById('f-id').value = i.id;
+            document.getElementById('f-nama').value = i.nama;
+            document.getElementById('f-kat').value = i.kategori;
+            document.getElementById('f-harga').value = i.harga;
+            document.getElementById('f-stok').value = i.stok;
+            document.getElementById('modal-title').innerText = "Edit Detail Barang";
+            document.getElementById('modal-form').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('modal-form').classList.add('hidden'); }
+
+        async function saveBarang(e) {
+            e.preventDefault();
+            const body = {
+                action: 'saveBarang',
+                id: document.getElementById('f-id').value,
+                nama: document.getElementById('f-nama').value,
+                kategori: document.getElementById('f-kat').value,
+                harga: document.getElementById('f-harga').value,
+                stok: document.getElementById('f-stok').value
+            };
+            setLoader(true, "Menyimpan ke server...");
+            try {
+                await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(body) });
+                closeModal();
+                setTimeout(fetchData, 1000);
+            } catch(e) { alert("Gagal menyimpan data."); }
+            setLoader(false);
+        }
+
+        function addToCart(id, nama, harga, stokMax) {
+            const inCart = cart.find(c => c.id === id);
+            if(inCart) {
+                if(inCart.qty < stokMax) inCart.qty++;
+                else alert("Stok sudah maksimal di keranjang!");
+            } else {
+                if(stokMax > 0) cart.push({ id, nama, harga, qty: 1 });
+                else alert("Maaf, stok barang sedang habis.");
+            }
+            renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items');
+            let total = 0;
+            container.innerHTML = cart.map((c, idx) => {
+                total += (c.harga * c.qty);
+                return `
+                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border">
+                    <div class="min-w-0 flex-1">
+                        <p class="font-bold text-xs truncate">${c.nama}</p>
+                        <p class="text-[9px] text-slate-400 font-bold">${c.qty}x @ Rp ${c.harga.toLocaleString()}</p>
+                    </div>
+                    <button onclick="removeFromCart(${idx})" class="p-2 text-red-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>`;
+            }).join('') || '<div class="py-10 text-center text-slate-300 italic text-xs font-bold uppercase tracking-widest">Keranjang Kosong</div>';
+            
+            document.getElementById('cart-total').innerText = "Rp " + total.toLocaleString();
+            document.getElementById('cart-count-mobile').innerText = cart.reduce((a, b) => a + b.qty, 0);
+            refreshIcons();
+        }
+
+        function removeFromCart(idx) { cart.splice(idx, 1); renderCart(); }
+
+        async function checkout() {
+            if(!cart.length) return alert("Belum ada barang di keranjang.");
+            setLoader(true, "Mengirim Pesanan...");
+            try {
+                await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'jual', user: user.nama, items: cart }) });
+                
+                let msg = `*PESANAN BARU - MAQSHOF*\n----------------------------\n👤 *Pemesan:* ${user.nama}\n\n*Daftar Belanja:* \n`;
+                cart.forEach(c => msg += `• ${c.nama} (${c.qty} pcs)\n`);
+                msg += `\n*Total Bayar:* ${document.getElementById('cart-total').innerText}\n----------------------------\n_Harap disiapkan, terima kasih._`;
+                
+                const waUrl = `https://api.whatsapp.com/send?phone=${WA_ADMIN}&text=${encodeURIComponent(msg)}`;
+                window.open(waUrl, '_blank');
+                
+                cart = []; renderCart(); 
+                toggleCartMobile(false);
+                setTimeout(fetchData, 1000);
+            } catch(e) { alert("Checkout gagal."); }
+            setLoader(false);
+        }
+
+        function showPage(id) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('nav-active'));
+            
+            const target = document.getElementById('page-'+id);
+            if(target) target.classList.remove('hidden');
+            
+            const btn = document.getElementById('nav-'+id);
+            if(btn) btn.classList.add('nav-active');
+
+            let title = "Dashboard";
+            if(id === 'barang') title = 'Manajemen Stok';
+            if(id === 'pesan') title = 'Belanja';
+            if(id === 'lihat-stok') title = 'Cek Stok Barang';
+            
+            document.getElementById('page-title').innerText = title;
+            toggleSidebar(false);
+            refreshIcons();
+        }
+
+        window.onload = () => refreshIcons();
+    </script>
+</body>
+</html>
